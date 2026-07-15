@@ -3,16 +3,17 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-import anthropic
+import requests
 import typer
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
 from .db import Database
+from .llm import get_provider
 from .profile import Profile
 from .report import write_report
-from .scoring import LLMScorer, keyword_score, llm_available
+from .scoring import LLMScorer, keyword_score
 from .sources import fetch_all
 from .tailor import generate_cover_letter
 from .utils import title_matches
@@ -83,10 +84,21 @@ def score(
         console.print("Nothing to score — run [bold]autohawk fetch[/] first.")
         return
 
-    use_llm = llm_available() and not keyword_only
-    if not use_llm and not keyword_only:
-        console.print("[yellow]ANTHROPIC_API_KEY not set — falling back to keyword scoring.[/]")
-    scorer = LLMScorer(profile) if use_llm else None
+    provider = None
+    if not keyword_only:
+        try:
+            provider = get_provider()
+        except RuntimeError as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(1)
+        if provider is None:
+            console.print(
+                "[yellow]No LLM available (no ANTHROPIC_API_KEY, Ollama not running) — "
+                "using keyword scoring. See DEPLOYMENT.md for Ollama setup.[/]"
+            )
+        else:
+            console.print(f"Scoring with [cyan]{provider.describe()}[/]")
+    scorer = LLMScorer(profile, provider) if provider else None
 
     scored = failed = 0
     with console.status(f"Scoring {len(jobs)} jobs...") as status:
@@ -103,13 +115,13 @@ def score(
                     pts, matched = keyword_score(profile.skills, row["title"], row["description"])
                     db.save_score(row["id"], pts, "keyword", matched_skills=matched)
                 scored += 1
-            except anthropic.RateLimitError:
-                console.print("[red]Rate limited by the API — stopping. Re-run to resume.[/]")
+            except requests.exceptions.ConnectionError:
+                console.print("[red]Lost connection to the LLM backend — stopping. Re-run to resume.[/]")
                 break
-            except anthropic.APIStatusError as exc:
-                console.print(f"[red]API error on {row['id']}[/]: {exc.status_code} {exc.message}")
-                failed += 1
             except Exception as exc:
+                if type(exc).__name__ == "RateLimitError":
+                    console.print("[red]Rate limited by the API — stopping. Re-run to resume.[/]")
+                    break
                 console.print(f"[red]Failed on {row['id']}[/]: {exc}")
                 failed += 1
     console.print(f"\nScored [green]{scored}[/] jobs" + (f", [red]{failed} failed[/]" if failed else "") + ".")
@@ -172,8 +184,16 @@ def letter(
     out_dir: str = typer.Option("letters", "--out", help="Directory to save the letter"),
 ) -> None:
     """Generate a tailored cover letter for a job."""
-    if not llm_available():
-        console.print("[red]ANTHROPIC_API_KEY is required for cover letters.[/]")
+    try:
+        provider = get_provider()
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+    if provider is None:
+        console.print(
+            "[red]Cover letters need an LLM. Set ANTHROPIC_API_KEY, or install and "
+            "run Ollama (see DEPLOYMENT.md).[/]"
+        )
         raise typer.Exit(1)
     db = Database()
     r = db.get_job(job_id)
@@ -181,8 +201,9 @@ def letter(
         console.print(f"[red]No job with id {job_id}[/]")
         raise typer.Exit(1)
     profile = Profile.load(profile_path)
+    console.print(f"Using [cyan]{provider.describe()}[/]")
     with console.status(f"Writing letter for {r['title']} @ {r['company']}..."):
-        text = generate_cover_letter(profile, r["title"], r["company"], r["description"])
+        text = generate_cover_letter(profile, r["title"], r["company"], r["description"], provider)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     safe_company = "".join(c if c.isalnum() or c in "-_" else "_" for c in r["company"])[:40]

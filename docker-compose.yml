@@ -1,0 +1,25 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    # Intentionally NO published ports: Ollama is only reachable by the
+    # autohawk container on the internal network. Never expose 11434 publicly.
+
+  autohawk:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    environment:
+      AUTOHAWK_PROVIDER: ollama
+      OLLAMA_HOST: http://ollama:11434
+      AUTOHAWK_OLLAMA_MODEL: ${AUTOHAWK_OLLAMA_MODEL:-llama3.1:8b}
+      AUTOHAWK_INTERVAL_HOURS: ${AUTOHAWK_INTERVAL_HOURS:-24}
+    volumes:
+      # ./data holds profile.yaml, autohawk.db, reports/, letters/
+      - ./data:/data
+
+volumes:
+  ollama-models:

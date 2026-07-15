@@ -1,15 +1,10 @@
-"""Tailored cover-letter generation with Claude."""
+"""Tailored cover-letter generation — provider-agnostic (Claude or local Ollama)."""
 
 from __future__ import annotations
 
-import os
-
-import anthropic
-
+from ..llm import Provider
 from ..profile import Profile
 from ..utils import truncate
-
-DEFAULT_MODEL = "claude-opus-4-8"
 
 _SYSTEM = (
     "You write short, specific, human-sounding cover letters. Rules: maximum 250 "
@@ -27,27 +22,12 @@ def generate_cover_letter(
     title: str,
     company: str,
     description: str,
-    model: str | None = None,
+    provider: Provider,
 ) -> str:
-    client = anthropic.Anthropic()
-    model = model or os.environ.get("AUTOHAWK_MODEL") or DEFAULT_MODEL
-    response = client.messages.create(
-        model=model,
-        max_tokens=2048,
-        thinking={"type": "adaptive"},
-        system=_SYSTEM,
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    f"CANDIDATE:\n{profile.to_prompt_text()}\n\n"
-                    f"JOB: {title} at {company}\n\n"
-                    f"POSTING:\n{truncate(description, 6000)}\n\n"
-                    "Write the cover letter."
-                ),
-            }
-        ],
+    user = (
+        f"CANDIDATE:\n{profile.to_prompt_text()}\n\n"
+        f"JOB: {title} at {company}\n\n"
+        f"POSTING:\n{truncate(description, 6000)}\n\n"
+        "Write the cover letter."
     )
-    if response.stop_reason == "refusal":
-        raise RuntimeError("model declined to generate this letter")
-    return next(b.text for b in response.content if b.type == "text").strip()
+    return provider.text(_SYSTEM, user).strip()
