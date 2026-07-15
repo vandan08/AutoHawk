@@ -1,0 +1,81 @@
+# AutoHawk profile — copy to profile.yaml and fill in your details.
+# profile.yaml is gitignored so your personal data never leaves your machine.
+
+personal:
+  name: Your Name
+  email: you@example.com
+  phone: "+91-00000-00000"
+  location: Ahmedabad, India
+  linkedin: https://linkedin.com/in/yourhandle
+  github: https://github.com/yourhandle
+
+# One paragraph that sells you. Used verbatim in scoring and cover letters.
+summary: >
+  DevSecOps engineer with hands-on experience building CI/CD security pipelines,
+  container security scanning, and cloud infrastructure automation. Built
+  ChainSentry, a supply-chain security SaaS. Comfortable across AWS, Kubernetes,
+  Terraform, and Python tooling.
+
+skills:
+  - Python
+  - Docker
+  - Kubernetes
+  - Terraform
+  - AWS
+  - CI/CD (GitHub Actions, Jenkins)
+  - SAST/DAST tooling
+  - Supply-chain security
+  - Linux
+  - Bash
+
+experience:
+  - title: DevSecOps Engineer (Portfolio / Projects)
+    company: Independent
+    years: 1
+    highlights:
+      - Built ChainSentry — dependency and container scanning SaaS
+      - Automated security gates in GitHub Actions pipelines
+
+preferences:
+  roles:
+    - DevSecOps Engineer
+    - DevOps Engineer
+    - Platform Engineer
+    - Security Engineer
+  seniority: junior-to-mid          # free text, used by the scorer
+  locations: [Remote, India]
+  min_salary: null                  # optional, e.g. "₹12 LPA" or "$70k"
+  visa_sponsorship_needed: false
+  notice_period: Immediate
+
+# Pre-filter: keep only jobs whose title matches at least one keyword
+# (case-insensitive substring). Empty list = keep everything.
+search:
+  title_keywords:
+    - devops
+    - devsecops
+    - security
+    - platform
+    - sre
+    - infrastructure
+    - cloud
+
+# Where to fetch jobs from. Remove or comment out sources you don't want.
+sources:
+  # Company boards on Greenhouse (slug from boards.greenhouse.io/<slug>)
+  greenhouse:
+    - gitlab
+    - cloudflare
+    - datadog
+  # Company boards on Lever (slug from jobs.lever.co/<slug>)
+  lever:
+    - palantir
+  # Remote job aggregators (no key needed)
+  remoteok:
+    tags: [devops, security]        # remoteok tag filter, [] = all
+  remotive:
+    search: devops                  # remotive search query
+  # Adzuna (needs ADZUNA_APP_ID / ADZUNA_APP_KEY in .env)
+  adzuna:
+    country: in                     # in, us, gb, ...
+    what: devops engineer

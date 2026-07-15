@@ -1,0 +1,20 @@
+# Environment / secrets
+.env
+
+# Your real profile stays local — commit only profile.example.yaml
+profile.yaml
+
+# Data produced at runtime
+autohawk.db
+letters/
+reports/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
