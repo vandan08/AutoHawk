@@ -140,6 +140,8 @@ WorkingDirectory=/home/autohawk/AutoHawk
 ExecStart=/home/autohawk/AutoHawk/.venv/bin/autohawk fetch
 ExecStart=/home/autohawk/AutoHawk/.venv/bin/autohawk score
 ExecStart=/home/autohawk/AutoHawk/.venv/bin/autohawk report
+# optional: email yourself the top new matches (SMTP settings in .env)
+ExecStart=/home/autohawk/AutoHawk/.venv/bin/autohawk digest
 ```
 
 Create `/etc/systemd/system/autohawk.timer`:
@@ -167,7 +169,7 @@ systemctl list-timers autohawk.timer  # confirm next run time
 ```
 
 > **Prefer plain cron?** One line in `crontab -e` (as the autohawk user) does the same:
-> `30 6 * * * cd ~/AutoHawk && .venv/bin/autohawk fetch && .venv/bin/autohawk score && .venv/bin/autohawk report >> ~/autohawk.log 2>&1`
+> `30 6 * * * cd ~/AutoHawk && .venv/bin/autohawk fetch && .venv/bin/autohawk score && .venv/bin/autohawk report && .venv/bin/autohawk digest >> ~/autohawk.log 2>&1`
 
 ### 2.5 Reading the shortlist remotely
 
@@ -177,12 +179,16 @@ The pipeline writes `reports/shortlist.html`. Three ways to read it, safest firs
    ```bash
    scp autohawk@your-server:~/AutoHawk/reports/shortlist.html .
    ```
-2. **SSH tunnel** when you want to browse it live:
+2. **SSH tunnel** when you want to browse it live — or, better, tunnel the
+   **interactive dashboard** and click through jobs, statuses, and letters:
    ```bash
-   ssh -L 8080:localhost:8080 autohawk@your-server \
-       "cd ~/AutoHawk/reports && python3 -m http.server 8080 --bind 127.0.0.1"
-   # then open http://localhost:8080/shortlist.html on your laptop
+   ssh -L 8090:localhost:8090 autohawk@your-server \
+       "cd ~/AutoHawk && .venv/bin/autohawk web"
+   # then open http://localhost:8090 on your laptop
    ```
+   The dashboard binds to `127.0.0.1` only and has no authentication — never
+   expose it directly with `--host 0.0.0.0` on an internet-facing box; keep it
+   behind the tunnel (or a VPN like Tailscale).
 3. **nginx with basic auth** if you want it always available at a URL:
    ```bash
    apt install -y nginx apache2-utils
@@ -288,6 +294,7 @@ Switch models any time: `ollama pull <model>` then set `AUTOHAWK_OLLAMA_MODEL=<m
 - [ ] **Run as an unprivileged user** (the `autohawk` user above), not root.
 - [ ] **`profile.yaml` and `.env` are gitignored** — keep it that way; they hold your personal data and any keys.
 - [ ] **Put basic auth (or better) in front of the report** if you serve it over HTTP — it contains your job-search activity.
+- [ ] **Never run `autohawk web --host 0.0.0.0` on an internet-facing machine.** The dashboard has no login and can trigger fetch/score and write statuses. Loopback + SSH tunnel only.
 - [ ] **SSH keys, not passwords**, and `PermitRootLogin no` on any internet-facing VPS.
 
 ---

@@ -75,6 +75,8 @@ sources:
     tags: [devops, security]        # remoteok tag filter, [] = all
   remotive:
     search: devops                  # remotive search query
+  # Hacker News "Ask HN: Who is hiring?" — latest monthly thread (no key needed)
+  hn_whoishiring: {}
   # Adzuna (needs ADZUNA_APP_ID / ADZUNA_APP_KEY in .env)
   adzuna:
     country: in                     # in, us, gb, ...

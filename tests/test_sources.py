@@ -1,6 +1,6 @@
 """Parser tests against captured API shapes — no network required."""
 
-from autohawk.sources import adzuna, greenhouse, lever, remoteok, remotive
+from autohawk.sources import adzuna, greenhouse, hn_whoishiring, lever, remoteok, remotive
 
 
 def test_greenhouse_parse():
@@ -62,6 +62,38 @@ def test_remotive_parse():
     job = remotive.parse_job(raw)
     assert job.company == "Acme"
     assert job.posted_at == "2026-07-12"
+
+
+def test_hn_whoishiring_parse():
+    raw = {
+        "id": 40563281,
+        "created_at": "2026-07-01T15:02:00.000Z",
+        "text": "Acme (YC S21) | Senior DevOps Engineer | Remote (US/EU) | $140k-$180k"
+                "<p>We build infrastructure tooling. Stack: Kubernetes, Terraform, Go.</p>"
+                "<p>Apply: jobs@acme.dev</p>",
+    }
+    job = hn_whoishiring.parse_comment(raw)
+    assert job is not None
+    assert job.source == "hn_whoishiring"
+    assert job.company == "Acme (YC S21)"
+    assert "Senior DevOps Engineer" in job.title
+    assert "Remote (US/EU)" in job.title  # role + location stay filterable
+    assert job.url == "https://news.ycombinator.com/item?id=40563281"
+    assert "Kubernetes" in job.description
+    assert job.posted_at == "2026-07-01"
+
+
+def test_hn_whoishiring_skips_deleted():
+    assert hn_whoishiring.parse_comment({"id": 1, "text": None}) is None
+    assert hn_whoishiring.parse_comment({"id": 2, "text": ""}) is None
+
+
+def test_hn_whoishiring_no_pipes_falls_back_to_first_line():
+    raw = {"id": 3, "created_at": "2026-07-02T00:00:00.000Z",
+           "text": "Acme is hiring a platform engineer<p>Details inside</p>"}
+    job = hn_whoishiring.parse_comment(raw)
+    assert job.company == "Acme is hiring a platform engineer"
+    assert job.title == "Acme is hiring a platform engineer"
 
 
 def test_adzuna_parse():

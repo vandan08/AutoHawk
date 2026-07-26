@@ -126,6 +126,18 @@ class Database:
             (min_score, limit),
         ).fetchall()
 
+    def recent_scored(self, since_iso: str, min_score: int = 0, limit: int = 5) -> list[sqlite3.Row]:
+        """Top scored jobs fetched since the given ISO timestamp (for digests)."""
+        return self.conn.execute(
+            """
+            SELECT * FROM jobs
+            WHERE score IS NOT NULL AND score >= ? AND fetched_at >= ?
+                  AND status != 'archived'
+            ORDER BY score DESC LIMIT ?
+            """,
+            (min_score, since_iso, limit),
+        ).fetchall()
+
     def counts(self) -> dict[str, int]:
         row = self.conn.execute(
             """

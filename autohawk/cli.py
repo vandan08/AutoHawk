@@ -244,6 +244,52 @@ def mark(
 
 
 @app.command()
+def digest(
+    hours: int = typer.Option(24, "--hours", help="Look back this many hours of fetches"),
+    limit: int = typer.Option(5, "--limit", "-n"),
+    min_score: int = typer.Option(60, "--min-score", "-m"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print instead of emailing"),
+) -> None:
+    """Email (or print) the top new matches — pair with cron for a daily digest."""
+    from datetime import datetime, timedelta, timezone
+
+    from .digest import build_digest, send_email, smtp_configured
+
+    since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat(timespec="seconds")
+    rows = Database().recent_scored(since, min_score=min_score, limit=limit)
+    if not rows:
+        console.print(f"No new matches scoring ≥{min_score} in the last {hours}h — nothing to send.")
+        return
+    subject, text_body, html_body = build_digest(rows)
+    if dry_run or not smtp_configured():
+        if not dry_run:
+            console.print(
+                "[yellow]SMTP not configured (AUTOHAWK_SMTP_HOST / AUTOHAWK_DIGEST_TO) — "
+                "printing instead.[/]\n"
+            )
+        console.print(f"[bold]{subject}[/]\n\n{text_body}")
+        return
+    to_addr = send_email(subject, text_body, html_body)
+    console.print(f"[green]Digest with {len(rows)} match(es) sent to {to_addr}[/]")
+
+
+@app.command()
+def web(
+    profile_path: str = PROFILE_OPT,
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind address"),
+    port: int = typer.Option(8090, "--port"),
+) -> None:
+    """Run the local web dashboard (browse, score, letters — no CLI needed)."""
+    from .web import serve
+
+    console.print(f"AutoHawk dashboard on [bold cyan]http://{host}:{port}[/] — Ctrl+C to stop.")
+    try:
+        serve(host, port, profile_path)
+    except KeyboardInterrupt:
+        console.print("\nStopped.")
+
+
+@app.command()
 def status() -> None:
     """Pipeline overview."""
     counts = Database().counts()

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from ..models import Job
-from . import adzuna, greenhouse, lever, remoteok, remotive
+from . import adzuna, greenhouse, hn_whoishiring, lever, remoteok, remotive
 
 # name -> fetch(source_config) -> list[Job]
 REGISTRY: dict[str, Callable[[Any], list[Job]]] = {
@@ -12,6 +12,7 @@ REGISTRY: dict[str, Callable[[Any], list[Job]]] = {
     "remoteok": remoteok.fetch,
     "remotive": remotive.fetch,
     "adzuna": adzuna.fetch,
+    "hn_whoishiring": hn_whoishiring.fetch,
 }
 
 

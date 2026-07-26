@@ -4,7 +4,7 @@ from typing import Any
 
 import requests
 
-USER_AGENT = "AutoHawk/0.1 (personal job-search aggregator)"
+USER_AGENT = "AutoHawk/0.2 (personal job-search aggregator)"
 TIMEOUT = 30
 
 

@@ -42,6 +42,10 @@ autohawk fetch        # pull jobs from all configured sources
 autohawk score        # score each job 0-100 against your profile
 autohawk shortlist    # ranked table in your terminal
 autohawk report       # standalone HTML report in reports/
+
+# ...or skip the pipeline commands entirely and use the browser:
+autohawk web          # dashboard at http://127.0.0.1:8090 — fetch, score,
+                      # browse, track status, and generate letters by clicking
 ```
 
 ## Commands
@@ -57,6 +61,8 @@ autohawk report       # standalone HTML report in reports/
 | `autohawk report` | Standalone HTML shortlist report |
 | `autohawk mark <id> applied` | Track your pipeline (applied / shortlisted / rejected / archived) |
 | `autohawk status` | Pipeline counts |
+| `autohawk web [--port 8090]` | Local web dashboard — the whole pipeline, no CLI needed |
+| `autohawk digest [--hours 24] [--dry-run]` | Email the top new matches (SMTP via `.env`); prints if SMTP unset |
 
 ## Job sources
 
@@ -67,6 +73,7 @@ autohawk report       # standalone HTML report in reports/
 | **RemoteOK** | none | optional tag filter |
 | **Remotive** | none | optional search query |
 | **Adzuna** | free API keys | country + search query |
+| **HN Who's Hiring** | none | latest monthly "Ask HN: Who is hiring?" thread, one job per top-level comment |
 
 Adding a source is one file in `autohawk/sources/` implementing `fetch(config) -> list[Job]` plus a registry entry — PRs welcome.
 
@@ -109,7 +116,9 @@ autohawk/
 ├── sources/          # one fetcher per job board
 ├── scoring/          # llm.py (structured-output scoring) + keyword.py (fallback)
 ├── tailor/           # cover-letter generation
-└── report/           # standalone HTML report
+├── report/           # standalone HTML report
+├── web.py            # local web dashboard (stdlib http.server)
+└── digest.py         # email digest (SMTP, cron-friendly)
 Dockerfile, docker-compose.yml, docker/   # containerized deployment
 DEPLOYMENT.md                             # local / VPS / Docker guides
 ```
@@ -123,10 +132,15 @@ pytest
 
 Tests cover the parsers, scorer, and database with captured API fixtures — no network or API key needed.
 
+## Web dashboard
+
+`autohawk web` serves a local dashboard (standard library only — no extra dependencies) where you can run fetch + score with one click, watch progress live, filter and browse the shortlist, open the full scoring rationale, generate cover letters, and track applied/rejected — all without touching the CLI. It binds to `127.0.0.1` by default; it's a single-user view over your local database, so keep it that way unless you put auth in front of it.
+
 ## Roadmap
 
-- [ ] Email digest (daily cron → top 5 new matches)
-- [ ] Hacker News "Who's Hiring" source
+- [x] Email digest (daily cron → top 5 new matches) — `autohawk digest`
+- [x] Hacker News "Who's Hiring" source
+- [x] Web dashboard — `autohawk web`
 - [ ] Resume tailoring per job (not just cover letters)
 - [ ] Browser-assisted form prefill (Playwright, human-in-the-loop submit)
 
