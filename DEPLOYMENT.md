@@ -252,11 +252,24 @@ docker compose exec ollama ollama pull llama3.1:8b
 docker compose logs -f autohawk
 ```
 
+Then open **http://127.0.0.1:8090** — the dashboard comes up with the stack.
+
 What you get:
 
-- `ollama` container with a named volume for models, **no published ports** (only the autohawk container can reach it)
+- `ollama` container with a named volume for models, **no published ports** (only the other containers can reach it)
 - `autohawk` container that runs `fetch → score → report` every 24 h (`AUTOHAWK_INTERVAL_HOURS` to change; `0` = run once and exit)
+- `dashboard` container serving the web UI on **127.0.0.1:8090**, sharing the same database
 - everything persistent in `./data/`: `profile.yaml`, `autohawk.db`, `reports/`, `letters/`
+
+### Exposing the dashboard beyond localhost
+
+The published port is bound to loopback because the dashboard has no login and can start scoring runs. To reach it from another machine, change the **host** side of the binding:
+
+```bash
+AUTOHAWK_WEB_BIND=0.0.0.0 docker compose up -d dashboard
+```
+
+Only do that behind a VPN (Tailscale) or an authenticating reverse proxy — never straight onto a public IP.
 
 Useful commands:
 

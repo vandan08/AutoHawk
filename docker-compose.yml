@@ -21,5 +21,27 @@ services:
       # ./data holds profile.yaml, autohawk.db, reports/, letters/
       - ./data:/data
 
+  dashboard:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    # Same image, different process: the web UI instead of the timed pipeline.
+    entrypoint: ["autohawk"]
+    command: ["web", "--host", "0.0.0.0", "--port", "8090", "-p", "/data/profile.yaml"]
+    environment:
+      AUTOHAWK_PROVIDER: ollama
+      OLLAMA_HOST: http://ollama:11434
+      AUTOHAWK_OLLAMA_MODEL: ${AUTOHAWK_OLLAMA_MODEL:-llama3.1:8b}
+    ports:
+      # 0.0.0.0 inside the container is fine; what matters is the HOST side.
+      # Defaults to loopback because the dashboard has no authentication and
+      # can trigger scoring runs. Override only behind a VPN or an authenticating
+      # reverse proxy:  AUTOHAWK_WEB_BIND=0.0.0.0 docker compose up -d
+      - "${AUTOHAWK_WEB_BIND:-127.0.0.1}:8090:8090"
+    volumes:
+      # Same ./data as the pipeline container — one shared database
+      - ./data:/data
+
 volumes:
   ollama-models:

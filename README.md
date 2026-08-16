@@ -103,7 +103,11 @@ On the Claude path, the profile lives in a cached system-prompt prefix, so scori
 
 ## Deployment
 
-Want it running daily on a server (or your own machine) without babysitting? **[DEPLOYMENT.md](DEPLOYMENT.md)** covers local Ollama setup, a full Ubuntu VPS walkthrough (systemd timer, nginx report serving, security checklist), and a one-command Docker Compose stack (`docker compose up -d`).
+Want it running daily on a server (or your own machine) without babysitting? **[DEPLOYMENT.md](DEPLOYMENT.md)** covers local Ollama setup, a full Ubuntu VPS walkthrough (systemd timer, nginx report serving, security checklist), and a one-command Docker Compose stack:
+
+```bash
+docker compose up -d      # Ollama + daily pipeline + dashboard on 127.0.0.1:8090
+```
 
 ## Project layout
 
